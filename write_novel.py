@@ -3,7 +3,7 @@ import time
 from huggingface_hub import InferenceClient
 
 client = InferenceClient(
-    model="Qwen/Qwen2.5-1.5B-Instruct",
+    model="microsoft/Phi-3-mini-4k-instruct",
     token=os.environ['HF_TOKEN']
 )
 
