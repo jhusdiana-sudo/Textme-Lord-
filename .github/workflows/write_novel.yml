@@ -1,32 +1,49 @@
 name: Generate 80k Word Novel
+
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual trigger button
+  repository_dispatch:
+    types: [loop-next-batch] # Allows the script to chain-trigger itself
+
+permissions:
+  contents: write # Crucial: Allows GitHub to save the text files to your repo
 
 jobs:
   write:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Install Dependencies
-        run: pip install huggingface_hub
+    - name: Install Dependencies
+      run: pip install huggingface_hub
 
-      - name: Run Novel Writer Script
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python write_novel.py
+    - name: Run Novel Writer Script
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: python write_novel.py
 
-      - name: Commit and Push Book Files
-        run: |
-          git config --global user.name 'Novel-Bot'
-          git config --global user.email 'novel-bot@github.com'
-          git add chapter_*.txt progress.txt || true
-          git commit -m "AI added newly generated 2400-word chapters via Hugging Face" || true
+    - name: Commit and Push Book Files
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@://github.com"
+        git add chapter_*.txt progress.txt || true
+        if git diff --staged --quiet; then
+          echo "No new chapters written."
+        else
+          git commit -m "Automated Save: Added new chapters"
           git push
           
+          # Optional Self-Trigger: Chaining to the next batch automatically
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://github.com{{ github.repository }}/dispatches \
+            -d '{"event_type": "loop-next-batch"}'
+        fi
+        
