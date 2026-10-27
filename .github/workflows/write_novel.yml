@@ -1,12 +1,10 @@
 name: Generate 80k Word Novel
 
 on:
-  workflow_dispatch: # Allows manual trigger button
-  repository_dispatch:
-    types: [loop-next-batch] # Allows the script to chain-trigger itself
+  workflow_dispatch:
 
 permissions:
-  contents: write # Crucial: Allows GitHub to save the text files to your repo
+  contents: write
 
 jobs:
   write:
@@ -31,19 +29,12 @@ jobs:
     - name: Commit and Push Book Files
       run: |
         git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@://github.com"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git add chapter_*.txt progress.txt || true
         if git diff --staged --quiet; then
-          echo "No new chapters written."
+          echo "No files modified."
         else
-          git commit -m "Automated Save: Added new chapters"
+          git commit -m "Save generated book contents"
           git push
-          
-          # Optional Self-Trigger: Chaining to the next batch automatically
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://github.com{{ github.repository }}/dispatches \
-            -d '{"event_type": "loop-next-batch"}'
         fi
         
