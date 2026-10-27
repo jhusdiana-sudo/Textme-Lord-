@@ -25,11 +25,8 @@ jobs:
           import os
           import time
           from huggingface_hub import InferenceClient
-
           client = InferenceClient(
-                   model='meta-llama/Meta-Llama-3.1-70B-Instruct',
-                          
-              
+              model="Qwen/Qwen2.5-7B-Instruct",
               token=os.environ['HF_TOKEN']
           )
 
@@ -48,14 +45,15 @@ jobs:
                   continue
 
               print(f'Generating Chapter {i}...')
-              
-              prev_context = ''
+
+              prev_context = ""
               if i > 1 and os.path.exists(f'chapter_{i-1}.txt'):
                   with open(f'chapter_{i-1}.txt', 'r') as f:
                       prev_context = f.read()[-3000:]
 
-              prompt = f'You are an expert novelist writing a Christian YA Romantic Comedy titled \"Text Me, Lord\". Based on this full outline:\n{outline}\n\nFollowing these events from the previous chapter:\n{prev_context}\n\nWrite Chapter {i} of the novel. It must be a highly detailed, immersive narrative chapter, aiming for approximately 2,400 words. Maintain a warm, funny, heartfelt, and faith-filled tone with a witty teenage voice. Write out all dialogue, actions, family/school elements, and emotional progression. Do not summarize.'
-              
+              prompt = f'You are an expert novelist writing a Christian YA Romantic Comedy titled \"Text Me, Lord\". Based on this full outline:\n{outline}\nFollowing these events from the previous chapter:\n{prev_context}\n\nWrite Chapter {i} of the novel. It must be a highly detailed, immersive narrative chapter, aiming for approximately 2,400 words. Maintain a warm, funny, heartfelt, and faith-filled tone with a witty teenage voice. Write out all dialogue, actions, family/school elements, and emotional progression. Do not summarize.'
+
+              success = False
               for attempt in range(3):
                   try:
                       messages = [{'role': 'user', 'content': prompt}]
@@ -64,28 +62,24 @@ jobs:
                           max_tokens=4000,
                           temperature=0.7
                       )
-                      
-                      output_text = response.choices.message.content
-                      
+                      output_text = response.choices[0].message.content
+
                       with open(chapter_file, 'w') as f:
                           f.write(output_text)
-                          
+
                       with open('progress.txt', 'a') as f:
                           f.write(f'{i}\n')
-                          
+
                       print(f'Successfully wrote Chapter {i}.')
                       time.sleep(8)
+                      success = True
                       break
                   except Exception as e:
                       print(f'Error on Chapter {i} (Attempt {attempt+1}): {e}')
                       time.sleep(20)
-          "
 
-      - name: Commit and Push Book Files
-        run: |
-          git config --global user.name 'Novel-Bot'
-          git config --global user.email 'novel-bot@github.com'
-          git add chapter_*.txt progress.txt || true
-          git commit -m "AI added newly generated 2400-word chapters via Hugging Face" || true
-          git push
-          
+              if not success:
+                  print("Stopping workflow due to consecutive failures.")
+                  break
+                  
+        
