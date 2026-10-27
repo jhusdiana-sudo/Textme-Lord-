@@ -3,7 +3,7 @@ import time
 from huggingface_hub import InferenceClient
 
 client = InferenceClient(
-    model="Qwen/Qwen2.5-7B-Instruct",
+    model="Qwen/Qwen2.5-1.5B-Instruct",
     token=os.environ['HF_TOKEN']
 )
 
@@ -66,3 +66,4 @@ for i in range(1, 35):
     if not success:
         print("Stopping workflow due to consecutive failures.")
         break
+        
